@@ -9,6 +9,8 @@ Sky Adventure (bootleg) PCB purchased by **Erin Olafson** / [**atrac17**](https:
 
 The intent is for this core to be a 1:1 playable implementation of Alpha Denshi M68000 arcade hardware.
 
+**Note:** This core appends `[MD]` to the end of MRA names so that they can live alongside the legacy version of the core.
+
 <br>
 <p align="center">
 <img width="" height="" src="https://user-images.githubusercontent.com/32810066/202100352-646d11d1-f6ac-4bfe-bcc6-0849ffb25cfe.png">
