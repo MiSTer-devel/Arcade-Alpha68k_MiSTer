@@ -1,13 +1,13 @@
 
 # Alpha Denshi M68000 FPGA Implementation
 
-FPGA compatible core of Alpha Denshi M68000 (ALPHA68K96V based) arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by **Erin Olafson**.
+FPGA compatible core of Alpha Denshi M68000 (ALPHA68K96V based) arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by **Erin Olafson**. Maintenance and miscellaneous quality of life features added by TheJesusfish
 
 FPGA implementation has been verified against schematics for Sky Adventure. PCB measurements taken from Gang Wars (ALPHA-68K96V) and Sky Soldiers (ALPHA-96KII).
 
 Sky Adventure (bootleg) PCB purchased by **Erin Olafson** / [**atrac17**](https://github.com/atrac17). Gang Wars, Sky Soldiers, and The Next Space (authentic) PCBs purchased by [**atrac17**](https://github.com/atrac17).
 
-The intent is for this core to be a 1:1 playable implementation of Alpha Denshi M68000 arcade hardware. Currently in **beta state**, this core is in active development with assistance from [**atrac17**](https://github.com/atrac17).
+The intent is for this core to be a 1:1 playable implementation of Alpha Denshi M68000 arcade hardware.
 
 <br>
 <p align="center">
@@ -18,27 +18,34 @@ The intent is for this core to be a 1:1 playable implementation of Alpha Denshi 
 
 | Title | PCB<br>Number | Status  | Released | ROM Set |
 |-------|---------------|---------|----------|---------|
-| [**Gang Wars**](https://en.wikipedia.org/wiki/Gang_Wars_(video_game))                | ALPHA-68K96V (GW)  | **Implemented**                | **Yes** | .249 merged set |
-| [**Super Champion Baseball**](https://snk.fandom.com/wiki/Super_Champion_Baseball)   | ALPHA-68K96V (GW)  | **Implemented**                | **Yes** | .249 (**sbasebalj** only) |
-| [**Sky Adventure**](https://snk.fandom.com/wiki/Sky_Adventure)                       | ALPHA-68K96V (GW)  | **Implemented**                | **Yes** | .249 merged set |
-| [**バトル フィールド**](https://en.wikipedia.org/wiki/Time_Soldiers)<br>Time Soldiers      | ALPHA-68K96II (SS) | **Implemented**                | **Yes** | .249 merged set |
-| [**Sky Soldiers**](https://en.wikipedia.org/wiki/Sky_Soldiers)                       | ALPHA-68K96II (SS) | **Implemented**                | **Yes** | .249 merged set |
-| [**Gold Medalist**](https://snk.fandom.com/wiki/Gold_Medalist)                       | ALPHA-68K96II (SS) | **Implemented**                | **No**  | .249 (**goldmedl** only) |
-| [**Paddle Mania**](https://snk.fandom.com/wiki/Paddle_Mania)                         | ALPHA-68K96I       | W.I.P                          | No      | N/A |
+| [**Gang Wars**](https://en.wikipedia.org/wiki/Gang_Wars_(video_game))                | ALPHA-68K96V (GW)  | **Implemented**                | **Yes** | MAME 0.288 |
+| [**Super Champion Baseball**](https://snk.fandom.com/wiki/Super_Champion_Baseball)   | ALPHA-68K96V (GW)  | **Implemented**                | **Yes** | MAME 0.288 (pitch speed from an estimated MCU timer, see SP85 handling) |
+| [**Sky Adventure**](https://snk.fandom.com/wiki/Sky_Adventure)                       | ALPHA-68K96V (GW)  | **Implemented**                | **Yes** | MAME 0.288 |
+| [**バトル フィールド**](https://en.wikipedia.org/wiki/Time_Soldiers)<br>Time Soldiers      | ALPHA-68K96II (SS) | **Implemented**                | **Yes** | MAME 0.288 |
+| [**Sky Soldiers**](https://en.wikipedia.org/wiki/Sky_Soldiers)                       | ALPHA-68K96II (SS) | **Implemented**                | **Yes** | MAME 0.288 |
+| [**Gold Medalist**](https://snk.fandom.com/wiki/Gold_Medalist)                       | ALPHA-68K96II (SS) | **Implemented**                | **Yes** | MAME 0.288 (**goldmedl** only; checked against MAME, no PCB) |
+| [**Paddle Mania**](https://snk.fandom.com/wiki/Paddle_Mania)                         | ALPHA-68K96I       |  **Separate<br>Repository**                           | No      | N/A |
 | [**The Next Space**](https://snk.fandom.com/wiki/The_Next_Space)                     | A8004-1            | **Separate<br>Repository**     | No      | N/A |
-| [**Super Stingray**](https://segaretro.org/Super_Stingray)                           | N/A                | W.I.P                          | No      | N/A |
-| [**Kyros no Yakata**](http://www.hardcoregaming101.net/kyros-desolator/)             | N/A                | W.I.P                          | No      | N/A |
-| [**Mahjong Block Jongbou**](https://snk.fandom.com/wiki/Jongbou)                     | ALPHA-68K96N       | W.I.P                          | No      | N/A |
+| [**Super Stingray**](https://segaretro.org/Super_Stingray)                           | N/A                | Not Implemented                         | No      | N/A |
+| [**Kyros no Yakata**](http://www.hardcoregaming101.net/kyros-desolator/)             | N/A                | Not Implemented                          | No      | N/A |
+| [**Mahjong Block Jongbou**](https://snk.fandom.com/wiki/Jongbou)                     | ALPHA-68K96N       | Not Implemented                          | No      | N/A |
 
 ## External Modules
 
-|Name| Purpose | Author |
-|----|---------|--------|
-| [**fx68k**](https://github.com/ijor/fx68k)                      | [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000)   | Jorge Cwik     |
-| [**t80**](https://opencores.org/projects/t80)                   | [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)             | Daniel Wallner |
-| [**jt2413**](https://github.com/jotego/jtopl)                   | [**Yamaha OPL-L**](https://en.wikipedia.org/wiki/Yamaha_YM2413)          | Jose Tejada    |
-| [**jt03**](https://github.com/jotego/jt12)                      | [**Yamaha OPN**](https://en.wikipedia.org/wiki/Yamaha_YM2203)            | Jose Tejada    |
-| [**yc_out**](https://github.com/MikeS11/MiSTerFPGA_YC_Encoder)  | [**Y/C Video Module**](https://en.wikipedia.org/wiki/S-Video)            | Mike Simone    |
+Copied unmodified from the listed repository and commit (sources and commits are also listed in `files.qip`).
+
+|Name| Purpose | Author | Source (commit) | License |
+|----|---------|--------|-----------------|---------|
+| [**fx68k**](https://github.com/ijor/fx68k)                      | [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000)   | Jorge Cwik     | ijor/fx68k (`0602ee4`) | GPL-3.0 |
+| [**t80**](https://opencores.org/projects/t80)                   | [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)             | Daniel Wallner, MiSTer-devel | MiSTer-devel/NeoGeo_MiSTer `rtl/cpu/T80` (`90a8350`) | T80 license (BSD-style) |
+| [**jt2413**](https://github.com/jotego/jtopl)                   | [**Yamaha OPL-L**](https://en.wikipedia.org/wiki/Yamaha_YM2413)          | Jose Tejada    | jotego/jtopl (`f96ff3e`) | GPL-3.0 |
+| [**jt03**](https://github.com/jotego/jt12)                      | [**Yamaha OPN**](https://en.wikipedia.org/wiki/Yamaha_YM2203)            | Jose Tejada    | jotego/jt12 (`eaab7e1`) with jotego/jt49 (`7f6abfd`) | GPL-3.0 |
+| [**MiSTer framework**](https://github.com/MiSTer-devel/Template_MiSTer) | `sys/` (video, audio, HPS I/O, scaler, screen rotation) | MiSTer-devel (Sorgelig et al.) | MiSTer-devel/Template_MiSTer (`d6324f2`) | GPL-2.0+ |
+| [**Save states**](https://github.com/MiSTer-devel/Arcade-TaitoF2_MiSTer) | DDR save-state streamer, memory stream, DDR interface, slot UI (`rtl/savestate/`) | Martin Donlon | MiSTer-devel/Arcade-TaitoF2_MiSTer (`9438df9`) | GPL-2.0 |
+| [**Pause**](https://github.com/JimmyStones/Pause_MiSTer)        | OSD pause and dimming (`rtl/pause.v`, as modified by va7deo) | Jim Gregory | JimmyStones/Pause_MiSTer | GPL-3.0 |
+| SDRAM / ROM segments                                            | `rtl/mem/` SDRAM controller, segment, download buffer, dual-port RAM | Josh Bassett (nullobject) | as shipped by va7deo | MIT |
+
+The save-state controller (`rtl/alpha68k_ss.sv`) and the high score module (`rtl/hiscore.sv`) are written for this core, after the save-state flow of Arcade-TaitoF2_MiSTer and the high score flow of MiSTer-devel's Arcade-RaizingMD_MiSTer / Arcade-IGSPGM_MiSTer. High score tables come from MAME's `hiscore.dat` (MAME 0.288 hiscore plugin).
 
 # Known Issues / Tasks
 
@@ -50,8 +57,15 @@ The intent is for this core to be a 1:1 playable implementation of Alpha Denshi 
 - ~~GFX decode and palette display for ALPHA-68K96II~~ [Task]  
 - ~~Verify clocks on ALPHA-68K96II hardware; MAME is incorrect~~ [Task]  <br><br>
 - ~~Options removed currently until stability is checked, may be tied to RESET line~~ [Issue]  
-- Super Champion Baseball (sbasebal) freezes due to MCU ROM code (no dump) [Issue]  
-- Awaiting Gold Medalist PCB to verify and release; submit new ROM dump for bad ROMs [Issue]  
+- ~~Super Champion Baseball (sbasebal) freezes due to MCU ROM code (no dump)~~ Alpha68kMD simulates the MCU's pitch timer (rate estimated, no dump) [Issue]  
+- ~~Super Champion Baseball occasionally boots into its HARD DEBUGGER screen ("PALETTE RAM 0 BAD") and Gang Wars into its HARD CHECK screen (PALETTE BAD)~~ Fixed in Alpha68kMD: the 68000's VPA was decoded for the palette RAM, unlike the PCB [Issue]  
+- ~~Awaiting Gold Medalist PCB to verify and release~~ Alpha68kMD releases goldmedl checked against MAME 0.288 only, with no PCB measurements; still awaiting a PCB to verify; submit new ROM dump for bad ROMs [Issue]  
+- Gold Medalist set 2 and bootleg (goldmedla, goldmedlb) are not included: they run on the ALPHA-68K96III board (10 MHz 68000, program ROM at $40000, different tile ROM), which the core does not implement [Issue]  
+- Super Champion Baseball's pitch timer rate (527.3 Hz) is an estimate, fitted so the slowest pitch reaches the game's 79 km/h floor and the fastest reads 141 km/h (rosters: 138-142 km/h); pitch speeds may differ from the PCB until the MCU is dumped or the timer is measured   
+- On the PCB, Gang Wars' MCU answers $21 to every no-coin query and the game then reads DIP switch 1 through the MCU (a second ~100 us access); the core answers $00 and supplies the DIP byte itself, as MAME does: same DIP value, ~200 fewer CPU cycles per interrupt (timing only)  
+- The ALPHA-68K96V schematic gives the interrupt acknowledge VPA but no DTACK; the core also asserts DTACK, which can leave the 68000's VMA armed and end a later bus cycle early (seen in simulation only at the earlier releases' ~549 Hz interrupt rate, not at the measured rates)  
+- On the ALPHA-68K96V schematic the IPL0 / IPL1 latches are cleared by the game's reads of $D8000 / $E0000, not by the interrupt acknowledge; the core clears both on any acknowledge (timing only)  
+- The ALPHA-68K96V 68000 runs at 10.588 MHz on average in the core (fractional divider, 5/17 of 72 MHz, halved) instead of the 20 MHz crystal / 2 = 10 MHz; SDRAM ROM wait states (~4 % in simulation) bring it to ~10.16 MHz of useful clocks. No V-board clock capture yet  
 
 # PCB Check List
 
@@ -118,9 +132,50 @@ ALPHA-8921                       | ALPHA-68K96V (GW)                            
 The SP85N or ALPHA-8511/8411 utilized on Alpha Denshi M68000 hardware for I/O handling appears to be closely related to the Motorola M68705p5. Early Alpha Denshi M68000 hardware utilized the M68705 before SNK / Alpha Denshi moved to a custom component. It's possible this is a rebadged custom.<br><br>
 There is a known dump for the ALPHA-8511 (possibly a M68705 from a bootleg) used on Super Stingray and a dump of the M68705 used on the Kyros no Yakata bootleg. The program code from the Kyros no Yakata bootleg may match the original ALPHA-8511 program code according to mame documentation.<br><br>
 The Sky Adventure bootleg purchased also uses a M68705p5 which is dumpable and will be submitted to mame along with the ROMs. Disassembly of the program code will be done for analysis based on current MCU implementation.<br><br>
-[**Readings have been pulled from the Gang Wars SP85N**](https://github.com/va7deo/alpha68k/blob/main/doc/ALPHA-68K96V/Gang%20Wars/SP85N_Readings/SP85N_Gang_Wars_Readings.png) revealed that the MCU pushes 15 interrupts per second, mame's driver for Alpha68k has this coded as 100 or 120 interrupts per second.
+[**Readings have been pulled from the Gang Wars SP85N**](https://github.com/va7deo/alpha68k/blob/main/doc/ALPHA-68K96V/Gang%20Wars/SP85N_Readings/SP85N_Gang_Wars_Readings.png) revealed that the MCU pushes 15 interrupts per second, mame's driver for Alpha68k has this coded as 100 or 120 interrupts per second.<br><br>
+Alpha68kMD generates the MCU interrupt at the rates in the PCB logic captures, as a fraction of the frame: 15.46 Hz (3.828 frames) on ALPHA-68K96V (Gang Wars SP85N capture) and 9.89 Hz (5.986 frames) on ALPHA-68K96II (Sky Soldiers ALPHA-8511 capture). Sky Adventure, Super Champion Baseball, Time Soldiers / Battle Field and Gold Medalist use their board's rate (no capture of their own). Earlier releases ran it at about 549 Hz (the counter was too narrow to reach the measured period). The MCU simulation keeps a coin press until the game's next coin query, so short coin taps are not missed. The YM2413 clock is 3.579545 MHz (X-3 crystal; earlier releases 3.600 MHz).<br><br>
+On the PCB the MCU holds the 68000's DTACK while it services each access (the SP85's own DTACK pin; 92-120 us CUS windows in the captures). Alpha68kMD holds it for 94.7 us on ALPHA-68K96V (Gang Wars coin query) and 99.5 us on ALPHA-68K96II (mean of the Sky Soldiers windows). Without an MCU dump this is a fixed approximation; the real time per access depends on the MCU program.<br><br>
+The PCB asserts VPA only for $500000-$7FFFFF and the interrupt acknowledge (74LS138 Y5-Y7, CPU schematic). Earlier releases also asserted it for the palette RAM at $400000, which could cut short the next opcode fetch: the cause of the occasional Gang Wars HARD CHECK / Super Champion Baseball HARD DEBUGGER boots and possibly of rare in-game glitches.<br><br>
+Super Champion Baseball times each pitch with a counter the MCU keeps in shared RAM ($4023E) and divides by the flight time to show the pitch speed; without it the game divided by zero and froze (MAME patches the US program instead). Alpha68kMD runs that counter at 527.3 Hz, an estimate: the game's slowest pitch (44 frames) then reaches its own 79 km/h floor and the fastest (30 frames) reads 141 km/h, the rosters listing 138-142 km/h top speeds.<br><br>
+On ALPHA-68K96II the game sets the flip screen through the MCU (write to MCU offset $2D), as MAME emulates; Alpha68kMD now uses that instead of the DIP bit, which had Sky Soldiers flipped at Flip Screen Off (it turned counter-clockwise to compensate). All vertical games now turn clockwise.
 
 # Core Features
+
+### Save States
+
+- Four save-state slots in DDR memory. On controller 1, hold **L** and press **Down** to save, **Up** to restore, **Left / Right** to change the slot. The OSD also has Save / Restore entries (keyboard Alt-F1 / F1), the slot and an auto-increment option.
+- Saved: 68000 registers, work, sprite, text and palette RAM, Z80 registers and RAM, banking and latches, MCU coin state and interrupt timer, rotary positions and the YM2203 / YM2413 registers. Video counters and line buffers rebuild within a frame. Without a save or restore running the core behaves exactly as before.
+
+### High Score Saving
+
+- High score tables (MAME `hiscore.dat` entries) are restored when the game has initialised its table and saved to `<game>.nvm` when the OSD is opened (Autosave Hiscores On) or with "Save Hiscores". Super Champion Baseball has no table and shows no option.
+
+### Controls
+
+- Each controller drives its own player: controller 1 = P1 joystick, buttons, Start and Coin; controller 2 = P2 joystick, buttons, Start and Coin. There is no P2 Start or P2 Coin on controller 1.
+- Default gamepad mapping in every MRA: Button 1 → A, Button 2 → B, Button 3 → X, Start → Start, Coin → Select, Pause → R, Save states → L (hold). Time Soldiers / Battle Field: Rotate CW → X, Rotate CCW → Y.
+- The OSD's Define Buttons order is the game's buttons first (Button 1-3, then Rotate CW / CCW), then Start, Coin, Pause and Save States.
+- MiSTer stores a defined button map per game (`config/inputs/<setname>_input_*.map`), shared with the original Alpha68k core. A map saved with the original core or an earlier Alpha68kMD release has a different button order; delete it or define the buttons again.
+- Button names come from the game documentation in `doc/` (Gang Wars and Sky Adventure manuals, Battle Field flyer) or the original MRAs. No game uses button combinations (none are listed in the manuals).
+
+| Game | Button 1 | Button 2 | Button 3 |
+|------|----------|----------|----------|
+| Gang Wars | Kick | Punch | Jump |
+| Sky Adventure | Fire | Weapon | Plane |
+| Super Champion Baseball | Swing/Pitch/Field | Steal/Pick Off/Run | Time-Out |
+| Sky Soldiers | Cannon System | Missile System | — |
+| Time Soldiers / Battle Field | Shot | Weapon | — (Rotate CW / CCW) |
+| Gold Medalist | Run/Spin/Power | Run/Spin/Hit Power | Jump/Jab/Throw Angle |
+
+- Gold Medalist is a 4-player, buttons-only game: controllers 1-4 drive players 1-4, and each controller's Start joins that player (the game's start buttons #1-#4). Player 3's Start is read from a spare bit of the DIP switch port, where the game expects it (MAME does not map it). The board has two coin inputs, so Coin works on controllers 1 and 2 only.
+
+### DIP Switches
+
+- DIP switch names, options and defaults follow MAME 0.288, except Gang Wars' Timer Speed, which defaults to Normal. Gold Medalist's Cabinet setting uses two separate switches, so it is shown as Cabinet (Upright / Cocktail) and Upright Players (2 / 4); its 100M Dash Speed options are shortened to fit the OSD. A changed DIP switch takes effect at "Reset to apply" (or any reset); changing it no longer resets the core.
+
+### Orientation
+
+- Vertical games (Sky Adventure, Sky Soldiers, Time Soldiers, Battle Field) start in vertical orientation; the Orientation option is shown for them only. Flip Screen DIP switches are drawn by the core's raster and work on analog and HDMI.
 
 ### Rotary Joystick Support
 
@@ -141,6 +196,7 @@ LS-30 Rotary Encoder | RP2040 | Wired USB | 1ms | 2241 | 95.52% | 0.747 ms | 2e8
 ### H/V Adjustments
 
 - There are two H/V toggles, H/V-sync positioning adjust and H/V-sync width adjust. Positioning will move the display for centering on CRT display. The sync width adjust can be used to for sync issues (rolling) without modifying the video timings.
+- Alpha68kMD: the adjustments are signed (-8 to +7) and every setting keeps one sync pulse per line and per frame (earlier releases lost vertical sync at most settings other than 0 and +1, and negative values moved the wrong way).
 
 ### Scandoubler Options
 
@@ -200,4 +256,3 @@ LS-30 Rotary Encoder | RP2040 | Wired USB | 1ms | 2241 | 95.52% | 0.747 ms | 2e8
 |LS-30 Player 1|LS-30 Player 2|
 |--|--|
 |<table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P1 Rotary 1</td><td>Y</td></tr><tr><td>P1 Rotary 2</td><td>U</td></tr><tr><td>P1 Rotary 3</td><td>I</td></tr><tr><td>P1 Rotary 4</td><td>O</td></tr><tr><td>P1 Rotary 5</td><td>H</td></tr><tr><td>P1 Rotary 6</td><td>J</td></tr><tr><td>P1 Rotary 7</td><td>K</td></tr><tr><td>P1 Rotary 8</td><td>L</td></tr><tr><td>P1 Rotary 9</td><td>N</td></tr><tr><td>P1 Rotary 10</td><td>M</td></tr><tr><td>P1 Rotary 11</td><td>,</td></tr><tr><td>P1 Rotary 12</td><td>.</td></tr> </table> | <table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P2 Rotary 1</td><td>Z</td></tr><tr><td>P2 Rotary 2</td><td>X</td></tr><tr><td>P2 Rotary 3</td><td>C</td></tr><tr><td>P2 Rotary 4</td><td>V</td></tr><tr><td>P2 Rotary 5</td><td>B</td></tr><tr><td>P2 Rotary 6</td><td>W</td></tr><tr><td>P2 Rotary 7</td><td>E</td></tr><tr><td>P2 Rotary 8</td><td>T</td></tr><tr><td>P2 Rotary 9</td><td>3</td></tr><tr><td>P2 Rotary 10</td><td>4</td></tr><tr><td>P2 Rotary 11</td><td>7</td></tr><tr><td>P2 Rotary 12</td><td>8</td></tr> </table>|
-
