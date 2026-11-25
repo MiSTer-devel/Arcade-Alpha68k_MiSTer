@@ -53,6 +53,7 @@ wire        vert_game;
 wire        hold68, holdz80, holdsnd;
 wire [211:0] z80_reg;
 wire        ss_hold68, ss_holdz80, ss_z80_run, ss_holdsnd, ss_cpu_execute, ss_irq, ss_reset68, ss_resetz80, ss_dirset, ss_mute, ss_active;
+wire        ss_z80_step;
 wire        ss_ovr_rd, ss_misc_wr;
 wire        mcu_ready;
 wire [15:0] ss_ovr_data;
@@ -716,6 +717,8 @@ assign  reset = RESET | key_reset | status[0] | rom_download | rom_dip_wait ;
 assign  hold68  = ( pause_cpu | ss_hold68 | hs_hold68 ) & ~ss_cpu_execute;
 assign  holdz80 = ( pause_cpu & ~ss_z80_run ) | ss_holdz80;
 assign  holdsnd = pause_cpu | ss_holdsnd;
+// Z80 bus enables: also on while a restore steps the Z80 to T2 (timers stay held)
+wire    z80_go  = ~holdz80 | ss_z80_step;
 
 // MCU interrupt period from the PCB captures: V board (Gang Wars SP85N) 15.46 Hz, II board (Sky Soldiers 8511) 9.89 Hz
 wire [22:0] clk_io_last = ( board_rev == 3 ) ? 23'd4_656_287 : 23'd7_282_175;
@@ -1554,7 +1557,7 @@ always @ (posedge clk_sys) begin
             end
         end
 
-        if ( clk_6M && !holdz80 ) begin
+        if ( clk_6M && z80_go ) begin
 
             z80_wait_n <= 1;
 
@@ -1861,8 +1864,8 @@ wire M1_n;
 T80pa z80 (
     .RESET_n    ( ~( reset | ss_resetz80 ) ),
     .CLK        ( clk_sys ),
-    .CEN_p      ( clk_6M & ~holdz80 ),
-    .CEN_n      ( ~clk_6M & ~holdz80 ),
+    .CEN_p      ( clk_6M & z80_go ),
+    .CEN_n      ( ~clk_6M & z80_go ),
     .WAIT_n     ( z80_wait_n ), // z80_wait_n
     .INT_n      ( 1'b1 ),
     .NMI_n      ( z80_nmi_n ),
@@ -2572,8 +2575,13 @@ alpha68k_ss alpha68k_ss (
     .active(ss_active),
 
     .z80_m1_n(M1_n),
+    .z80_mreq_n(MREQ_n),
+    .z80_nmi_n(z80_nmi_n),
+    .z80_cen(clk_6M),
+    .z80_di(z80_din),
     .z80_reg(z80_reg),
     .holdz80(ss_holdz80),
+    .z80_step(ss_z80_step),
     .z80_run(ss_z80_run),
     .resetz80(ss_resetz80),
     .dirset(ss_dirset),

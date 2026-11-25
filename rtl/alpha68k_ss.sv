@@ -38,8 +38,13 @@ module alpha68k_ss
 
     // Z80
     input             z80_m1_n,
+    input             z80_mreq_n,
+    input             z80_nmi_n,
+    input             z80_cen,
+    input       [7:0] z80_di,
     input     [211:0] z80_reg,
     output reg        holdz80,
+    output reg        z80_step,
     output            z80_run,
     output reg        resetz80,
     output reg        dirset,
@@ -107,7 +112,8 @@ typedef enum bit [4:0] {
     SST_RST_Z80,
     SST_RST_68K_RESET,
     SST_RST_RELEASE,
-    SST_RST_68K_RUN
+    SST_RST_68K_RUN,
+    SST_RST_Z80_T2
 } ss_state_t;
 
 ss_state_t state = SST_IDLE;
@@ -119,6 +125,16 @@ reg  [31:0] saved_ssp;
 reg  [31:0] restore_ssp;
 reg  [15:0] cnt;
 reg         m1_l;
+reg   [7:0] z_op;
+reg         z_arm, z_park, z_late;
+reg   [1:0] z_n;
+
+// last opcode byte fetched; the M1 after a prefix or EI is not a stop point
+always @(posedge clk) begin
+    if ( reset || resetz80 ) z_op <= 8'h00;
+    else if ( !z80_m1_n && !z80_mreq_n ) z_op <= z80_di;
+end
+wire z_safe = ( z_op != 8'hcb ) && ( z_op != 8'hdd ) && ( z_op != 8'hed ) && ( z_op != 8'hfd ) && ( z_op != 8'hfb );
 reg         ss_write, ss_read;
 wire        ss_busy;
 
@@ -476,6 +492,7 @@ always @(posedge clk) begin
         SST_IDLE: begin
             hold68 <= 0; holdz80 <= 0; holdsnd <= 0; cpu_execute <= 0; irq7 <= 0; reset68 <= 0;
             resetz80 <= 0; dirset <= 0; mute <= 0; aux_en <= 0; rp_go <= 0;
+            z80_step <= 0; z_arm <= 0; z_park <= 0; z_late <= 0; z_n <= 0;
             cnt <= 0;
             if ( do_save && !reset ) begin
                 hold68 <= 1;
@@ -486,16 +503,25 @@ always @(posedge clk) begin
             end
         end
 
-        // 68000 frozen; the Z80 runs to the start of its next opcode fetch
+        // 68000 frozen; the Z80 runs to T2 of its next opcode fetch
         SST_SAVE_STOP68: begin
             if ( cnt == 16'd8 ) begin cnt <= 0; state <= SST_SAVE_STOPZ80; end
         end
 
+        // stop at an M1 not after a prefix / EI, with NMI high; after the T1 CEN_p and its CEN_n, hold in T2
         SST_SAVE_STOPZ80: begin
-            if ( ( m1_l && !z80_m1_n ) || ( &cnt ) ) begin
-                holdz80 <= 1; holdsnd <= 1;
-                cpu_execute <= 1; irq7 <= 1;
-                state <= SST_SAVE_IRQ;
+            if ( &cnt ) z_late <= 1;
+            if ( z_park ) begin
+                z_park <= 0;
+                if ( z80_nmi_n || z_late ) begin
+                    holdz80 <= 1; holdsnd <= 1;
+                    cpu_execute <= 1; irq7 <= 1;
+                    state <= SST_SAVE_IRQ;
+                end
+            end else if ( z_arm ) begin
+                if ( z80_cen ) begin z_arm <= 0; z_park <= !z80_mreq_n && ( z80_nmi_n || z_late ); end
+            end else if ( m1_l && !z80_m1_n && ( ( z80_nmi_n && z_safe ) || z_late ) ) begin
+                z_arm <= 1;
             end
         end
 
@@ -553,7 +579,17 @@ always @(posedge clk) begin
         // Z80 registers loaded with DIRSet while its clock enables are stopped
         SST_RST_Z80: begin
             dirset <= ( cnt >= 16'd4 ) && ( cnt < 16'd12 );
-            if ( cnt == 16'd16 ) begin
+            if ( cnt == 16'd16 ) begin z_n <= 0; state <= SST_RST_Z80_T2; end
+        end
+
+        // Z80 enables only: reset to T1, T1 to T2, then the CEN_n after it, as a save stops it
+        SST_RST_Z80_T2: begin
+            if ( z80_step ) begin
+                if ( z80_cen ) z_n <= z_n + 1'd1;
+                if ( z_n == 2'd2 ) z80_step <= 0;
+            end else if ( z_n == 2'd0 ) begin
+                if ( z80_cen ) z80_step <= 1;
+            end else begin
                 reset68 <= 1; cpu_execute <= 1; cnt <= 0;
                 state <= SST_RST_68K_RESET;
             end
