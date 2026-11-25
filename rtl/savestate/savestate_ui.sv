@@ -1,5 +1,7 @@
-// savestate_ui.sv: copied unmodified from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 rtl/savestate_ui.sv
-// (Martin Donlon / wickerwaka, GPL-2.0, see that repository's LICENSE); only this provenance header was added.
+// savestate_ui.sv: copied from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 rtl/savestate_ui.sv
+// (Martin Donlon / wickerwaka, GPL-2.0, see that repository's LICENSE).
+// Modified for Arcade-Alpha68kMD: Autoincrement Slot advances the slot one clock after the save request (inc_pend),
+// so the save and its message use the selected slot.
 module savestate_ui #(parameter INFO_TIMEOUT_BITS)
 (
     input            clk,
@@ -25,6 +27,7 @@ module savestate_ui #(parameter INFO_TIMEOUT_BITS)
 );
 
 reg [1:0] ss_base = 0;
+reg       inc_pend = 0;
 
 reg lastRight  = 1'b0;
 reg lastLeft   = 1'b0;
@@ -56,8 +59,16 @@ always @(posedge clk) begin
     
     ss_save      <= 1'b0;
     ss_load      <= 1'b0;
+
     ss_info_req  <= 1'b0;
     statusUpdate <= 1'b0;
+
+    // autoincrement after the save request has taken the current slot
+    inc_pend     <= 1'b0;
+    if (inc_pend) begin
+        ss_base      <= ss_base + 1'd1;
+        statusUpdate <= 1'b1;
+    end
     
     if(allow_ss) begin
     
@@ -104,10 +115,7 @@ always @(posedge clk) begin
             if (joyDown & ~lastDown) begin
                 ss_save     <= 1'b1;
                 InfoWaitcnt <= 25'b0;
-            if (autoincslot) begin
-                ss_base      <= ss_base + 1'd1;
-                statusUpdate <= 1'b1;
-            end
+            inc_pend <= autoincslot;
             end
             // load
             if (joyUp & ~lastUp) begin
@@ -122,10 +130,7 @@ always @(posedge clk) begin
         old_st <= OSD_saveload;
         if(~old_st[0] && OSD_saveload[0]) begin
             ss_save <= 1'b1;
-            if (autoincslot) begin
-                ss_base      <= ss_base + 1'd1;
-                statusUpdate <= 1'b1;
-            end
+            inc_pend <= autoincslot;
         end
 
         if(~old_st[1] && OSD_saveload[1]) ss_load <= 1'b1;

@@ -41,7 +41,7 @@ assign HDMI_BOB_DEINT = 0;
 assign FB_FORCE_BLANK = 0;
 
 assign AUDIO_MIX = 0;
-assign LED_USER =  | {cfg,dsw_sp85,dsw_m68k,coin_ratio_a,coin_ratio_b} ;// | { frame_count, global_count, rom_count, rom_2_count, sprite_count, sound_count, sprite_overrun, sp_count } ;
+assign LED_USER = 0;
 assign LED_DISK = 0;
 assign LED_POWER = 0;
 assign BUTTONS = 0;
@@ -53,7 +53,7 @@ wire        vert_game;
 wire        hold68, holdz80, holdsnd;
 wire [211:0] z80_reg;
 wire        ss_hold68, ss_holdz80, ss_z80_run, ss_holdsnd, ss_cpu_execute, ss_irq, ss_reset68, ss_resetz80, ss_dirset, ss_mute, ss_active;
-wire        ss_z80_step;
+wire        ss_z80_step, ss_rst_hold;
 wire        ss_ovr_rd, ss_misc_wr;
 wire        mcu_ready;
 wire [15:0] ss_ovr_data;
@@ -106,10 +106,8 @@ localparam CONF_STR = {
     "P1O89,Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
     "H1P1O3,Orientation,Vert,Horz;",
     "P1-;",
-    "P1O46,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%,CRT 100%;",
+    "P1O46,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
     "P1OA,Force Scandoubler,Off,On;",
-    "P1-;",
-    "P1O7,Video Mode,NTSC,PAL;",
     "P1-;",
     "P1OOR,H-sync Pos Adj,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
     "P1OSV,V-sync Pos Adj,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
@@ -389,8 +387,11 @@ reg         p4_down;
 reg         p4_up;
 reg  [2:0]  p4_buttons;
 
-wire [2:0]  pad0_buttons = { pad0[6], pad0[5], pad0[4] };
-wire [2:0]  pad1_buttons = { pad1[6], pad1[5], pad1[4] };
+// controller per player: Swap exchanges whole controllers, the keyboard keeps its players
+wire [15:0] pp1 = status[38] ? pad1 : pad0;
+wire [15:0] pp2 = status[38] ? pad0 : pad1;
+wire [2:0]  pp1_buttons = { pp1[6], pp1[5], pp1[4] };
+wire [2:0]  pp2_buttons = { pp2[6], pp2[5], pp2[4] };
 
 always @ * begin
     p3_right   = 0;
@@ -410,57 +411,45 @@ always @ * begin
         p1_left    = 0;
         p1_down    = 0;
         p1_up      = 0;
-        p1_buttons = pad0_buttons | {key_p1_c, key_p1_b, key_p1_a};
+        p1_buttons = pp1_buttons | {key_p1_c, key_p1_b, key_p1_a};
 
         p2_right   = 0;
         p2_left    = 0;
         p2_down    = 0;
         p2_up      = 0;
-        p2_buttons = pad1_buttons | {key_p2_c, key_p2_b, key_p2_a};
-    end else if ( status[38] == 0 ) begin
-        p1_right   = pad0[0] | key_p1_right;
-        p1_left    = pad0[1] | key_p1_left;
-        p1_down    = pad0[2] | key_p1_down;
-        p1_up      = pad0[3] | key_p1_up;
-        p1_buttons = pad0_buttons | {key_p1_c, key_p1_b, key_p1_a};
-
-        p2_right   = pad1[0] | key_p2_right;
-        p2_left    = pad1[1] | key_p2_left;
-        p2_down    = pad1[2] | key_p2_down;
-        p2_up      = pad1[3] | key_p2_up;
-        p2_buttons = pad1_buttons | {key_p2_c, key_p2_b, key_p2_a};
+        p2_buttons = pp2_buttons | {key_p2_c, key_p2_b, key_p2_a};
     end else begin
-        p2_right   = pad0[0] | key_p1_right;
-        p2_left    = pad0[1] | key_p1_left;
-        p2_down    = pad0[2] | key_p1_down;
-        p2_up      = pad0[3] | key_p1_up;
-        p2_buttons = pad0_buttons | {key_p1_c, key_p1_b, key_p1_a};
+        p1_right   = pp1[0] | key_p1_right;
+        p1_left    = pp1[1] | key_p1_left;
+        p1_down    = pp1[2] | key_p1_down;
+        p1_up      = pp1[3] | key_p1_up;
+        p1_buttons = pp1_buttons | {key_p1_c, key_p1_b, key_p1_a};
 
-        p1_right   = pad1[0] | key_p2_right;
-        p1_left    = pad1[1] | key_p2_left;
-        p1_down    = pad1[2] | key_p2_down;
-        p1_up      = pad1[3] | key_p2_up;
-        p1_buttons = pad1_buttons | {key_p2_c, key_p2_b, key_p2_a};
+        p2_right   = pp2[0] | key_p2_right;
+        p2_left    = pp2[1] | key_p2_left;
+        p2_down    = pp2[2] | key_p2_down;
+        p2_up      = pp2[3] | key_p2_up;
+        p2_buttons = pp2_buttons | {key_p2_c, key_p2_b, key_p2_a};
     end
 end
 
 // each controller drives its own player's start and coin
-wire start1  = pad0[9] | key_start_1p;
-wire start2  = pad1[9] | key_start_2p;
-wire start3  = pad2[9] | key_start_3p;
-wire start4  = pad3[9] | key_start_4p;
-wire coin_a  = pad0[10] | key_coin_a;
-wire coin_b  = pad1[10] | key_coin_b;
+wire start1  = pp1[9] | key_start_1p;
+wire start2  = pp2[9] | key_start_2p;
+wire start3  = pad2[9];
+wire start4  = pad3[9];
+wire coin_a  = pp1[10] | key_coin_a;
+wire coin_b  = pp2[10] | key_coin_b;
 wire b_pause = joy0[11] | joy1[11] | key_pause;
 
 // Keyboard handler
 
-wire key_start_1p, key_start_2p, key_start_3p, key_start_4p, key_coin_a, key_coin_b;
-wire key_tilt, key_test, key_reset, key_service, key_pause;
+reg key_start_1p, key_start_2p, key_coin_a, key_coin_b;
+reg key_test, key_reset, key_service, key_pause;
 //wire key_fg_enable, key_spr_enable;
 
-wire key_p1_up, key_p1_left, key_p1_down, key_p1_right, key_p1_a, key_p1_b, key_p1_c, key_p1_d;
-wire key_p2_up, key_p2_left, key_p2_down, key_p2_right, key_p2_a, key_p2_b, key_p2_c, key_p2_d;
+reg key_p1_up, key_p1_left, key_p1_down, key_p1_right, key_p1_a, key_p1_b, key_p1_c, key_p1_d;
+reg key_p2_up, key_p2_left, key_p2_down, key_p2_right, key_p2_a, key_p2_b, key_p2_c, key_p2_d;
 
 wire pressed = ps2_key[9];
 
@@ -480,7 +469,6 @@ always @(posedge clk_sys) begin
             'h006: key_test       <= pressed; // f2
             'h004: key_reset      <= pressed; // f3
             'h046: key_service    <= pressed; // 9
-            'h02c: key_tilt       <= pressed; // t
             'h04D: key_pause      <= pressed; // p
 
             9'h075, 9'h175: key_p1_up      <= pressed; // up
@@ -500,9 +488,6 @@ always @(posedge clk_sys) begin
             'h01b: key_p2_b       <= pressed; // s
             'h015: key_p2_c       <= pressed; // q
             'h01d: key_p2_d       <= pressed; // w
-
-            'h026: key_start_3p   <= pressed; // 3
-            'h025: key_start_4p   <= pressed; // 4
 
             // Rotary1 LS-30 P1 Scancodes
             'h035: key_ls30_p1[0]  <= pressed; // y
@@ -550,17 +535,16 @@ reg last_rot2_ccw ;
 
 wire p1_rotary_controller_type = status[18];
 wire p2_rotary_controller_type = status[19];
-wire p1_swap = status[38];
 
 wire rot1_cw;
 wire rot1_ccw;
 wire rot2_cw;
 wire rot2_ccw;
 
-assign rot1_cw  = p1_swap ? (pad1[7] | key_ls30_p2[0]) : (pad0[7] | key_ls30_p1[0]);
-assign rot1_ccw = p1_swap ? (pad1[8] | key_ls30_p2[1]) : (pad0[8] | key_ls30_p1[1]);
-assign rot2_cw  = p1_swap ? (pad0[7] | key_ls30_p1[0]) : (pad1[7] | key_ls30_p2[0]);
-assign rot2_ccw = p1_swap ? (pad0[8] | key_ls30_p1[1]) : (pad1[8] | key_ls30_p2[1]);
+assign rot1_cw  = pp1[7] | key_ls30_p1[0];
+assign rot1_ccw = pp1[8] | key_ls30_p1[1];
+assign rot2_cw  = pp2[7] | key_ls30_p2[0];
+assign rot2_ccw = pp2[8] | key_ls30_p2[1];
 
 always @ (posedge clk_sys) begin
 
@@ -569,6 +553,8 @@ always @ (posedge clk_sys) begin
         rotary2 <= 12'h800 ;
     end else begin
         if ( p1_rotary_controller_type == 0 ) begin
+            // no position left by LS-30 mode: start at the first one
+            if ( rotary1 == 0 ) rotary1 <= 12'h800;
             // did the button state change?
             if ( rot1_cw != last_rot1_cw ) begin
                 last_rot1_cw <= rot1_cw;
@@ -590,6 +576,7 @@ always @ (posedge clk_sys) begin
         end
 
         if ( p2_rotary_controller_type == 0 ) begin
+            if ( rotary2 == 0 ) rotary2 <= 12'h800;
             if ( rot2_cw != last_rot2_cw ) begin
                 last_rot2_cw <= rot2_cw;
                 if ( rot2_cw == 1 ) begin
@@ -833,41 +820,35 @@ arcade_video #(256,24) arcade_video
         .fx(scan_lines)
 );
 
-// DDRAM: save states (port a, while frozen) and the rotation framebuffer (port b)
-ddr_if ddr_host(), ddr_ss(), ddr_rot();
+// DDRAM: a rotation write takes its cycle; the save-state stream waits while it presents a command
+ddr_if ddr_ss();
 
-ddr_mux ddr_mux (
-    .clk(clk_sys),
-    .x(ddr_host),
-    .a(ddr_ss),
-    .b(ddr_rot)
-);
+wire        rot_we, rot_rd;
+wire [28:0] rot_ddr_addr;
+wire  [7:0] rot_burstcnt, rot_be;
+wire [63:0] rot_din;
 
 assign DDRAM_CLK         = clk_sys;
-assign DDRAM_ADDR        = ddr_host.addr[31:3];
-assign DDRAM_BURSTCNT    = ddr_host.burstcnt;
-assign DDRAM_DIN         = ddr_host.wdata;
-assign DDRAM_BE          = ddr_host.byteenable;
-assign DDRAM_WE          = ddr_host.write;
-assign DDRAM_RD          = ddr_host.read;
-assign ddr_host.rdata    = DDRAM_DOUT;
-assign ddr_host.rdata_ready = DDRAM_DOUT_READY;
-assign ddr_host.busy     = DDRAM_BUSY;
-
-wire [28:0] rot_ddr_addr;
-assign ddr_rot.addr      = { rot_ddr_addr, 3'b000 };
-assign ddr_rot.acquire   = ~ddr_ss.acquire;
+assign DDRAM_ADDR        = rot_we ? rot_ddr_addr : ddr_ss.addr[31:3];
+assign DDRAM_BURSTCNT    = rot_we ? rot_burstcnt : ddr_ss.burstcnt;
+assign DDRAM_DIN         = rot_we ? rot_din      : ddr_ss.wdata;
+assign DDRAM_BE          = rot_we ? rot_be       : ddr_ss.byteenable;
+assign DDRAM_WE          = rot_we | ddr_ss.write;
+assign DDRAM_RD          = ~rot_we & ddr_ss.read;
+assign ddr_ss.rdata      = DDRAM_DOUT;
+assign ddr_ss.rdata_ready = DDRAM_DOUT_READY;
+assign ddr_ss.busy       = ~ddr_ss.acquire | ( ( DDRAM_BUSY | rot_we ) & ( ddr_ss.read | ddr_ss.write ) );
 
 screen_rotate screen_rotate (
     .*,
     .DDRAM_CLK(),
-    .DDRAM_BUSY(ddr_rot.busy),
-    .DDRAM_BURSTCNT(ddr_rot.burstcnt),
+    .DDRAM_BUSY(DDRAM_BUSY),
+    .DDRAM_BURSTCNT(rot_burstcnt),
     .DDRAM_ADDR(rot_ddr_addr),
-    .DDRAM_DIN(ddr_rot.wdata),
-    .DDRAM_BE(ddr_rot.byteenable),
-    .DDRAM_WE(ddr_rot.write),
-    .DDRAM_RD(ddr_rot.read)
+    .DDRAM_DIN(rot_din),
+    .DDRAM_BE(rot_be),
+    .DDRAM_WE(rot_we),
+    .DDRAM_RD(rot_rd)
 );
 
 reg [7:0] hc_del;
@@ -1247,12 +1228,13 @@ reg [1:0] hbl_sr;
 
 reg [7:0] credits;
 reg [3:0] coin_count;
-reg [1:0] coin_latch;
+reg [3:0] coin_count_b;
 reg [1:0] coin_prev;
 reg [1:0] coin_pend;
 
-// coin inputs seen by the MCU query: held level or a press since the last query
-wire [1:0] coin_in = { coin_b, coin_a } | coin_pend;
+// presses not yet collected by the MCU query, including one this clock; slot A served first
+wire [1:0] coin_new  = coin_pend | ( { coin_b, coin_a } & ~coin_prev );
+wire [1:0] coin_take = coin_new[0] ? 2'b01 : { coin_new[1], 1'b0 };
 
 // Coin tables for games with MCU id 2222
 
@@ -1338,7 +1320,8 @@ always @ (posedge clk_sys) begin
         z80_nmi_suppress <= 1; // ym2203 port high impedance on reset?
 
         credits <= 0;
-        coin_latch <= 0;
+        coin_count <= 0;
+        coin_count_b <= 0;
         flip_mcu <= 0;
         coin_prev <= { coin_b, coin_a };
         coin_pend <= 0;
@@ -1350,19 +1333,20 @@ always @ (posedge clk_sys) begin
 
         // latch coin presses between MCU queries
         coin_prev <= { coin_b, coin_a };
-        coin_pend <= coin_pend | ( { coin_b, coin_a } & ~coin_prev );
+        coin_pend <= coin_new;
 
         // vblank handling
         vbl_sr <= { vbl_sr[0], vbl };
+        // a restore keeps the saved interrupt levels until the 68000 runs again
         if ( vbl_sr == 2'b01 ) begin // rising edge
             //  68k vbl interrupt
-            m68k_ipl0_n <= 0;
+            if ( !ss_rst_hold ) m68k_ipl0_n <= 0;
             frame_count <= frame_count + 1;
         end
 
         // mcu interrupt handling
         hbl_sr <= { hbl_sr[0], clk_io };  // ????
-        if ( hbl_sr == 2'b01 ) begin // rising edge
+        if ( hbl_sr == 2'b01 && !ss_rst_hold ) begin // rising edge
             //  68k vbl interrupt
             m68k_ipl1_n <= 0;
         end
@@ -1419,19 +1403,16 @@ always @ (posedge clk_sys) begin
                             mcu_wl <= 1;
                         end else if ( m68k_a[8:1] == 8'h29 ) begin
 
-                            // coins
-                            coin_pend <= { coin_b, coin_a } & ~coin_prev;
-                            if ( coin_in == 0 ) begin
-                                coin_latch <= 0;
-
+                            // coins: one press per query, each slot with its own coin count
+                            coin_pend <= coin_new & ~coin_take;
+                            if ( coin_new == 0 ) begin
                                 mcu_addr <= m68k_a[13:1];
                                 mcu_din <= 8'h00 ;
                                 mcu_wl <= 1;
-                            end else if ( coin_latch == 0 ) begin
-                                coin_latch <= coin_in;
+                            end else begin
                                 // set coin id
                                 if ( coin_type == 1 ) begin
-                                    if ( coin_in[0] == 1 ) begin
+                                    if ( coin_take[0] == 1 ) begin
                                         mcu_din <= 8'h23 ;
                                     end else begin
                                         mcu_din <= 8'h24 ;
@@ -1439,20 +1420,19 @@ always @ (posedge clk_sys) begin
                                 end else begin
                                     mcu_din <= 8'h22 ;
                                     // only games with coin id 22 needs a coin counter
-                                    if ( coin_in[0] == 1 ) begin
-                                        // calc before or after invert?
+                                    if ( coin_take[0] == 1 ) begin
                                         if ( coin_ratio_a[7:4] == coin_count ) begin
                                             credits <= coin_ratio_a[3:0];
                                             coin_count <= 0;
                                         end else begin
                                             coin_count <= coin_count + 1;
                                         end
-                                    end if ( coin_in[1] == 1 ) begin
-                                        if ( coin_ratio_b[7:4] == coin_count ) begin
+                                    end else begin
+                                        if ( coin_ratio_b[7:4] == coin_count_b ) begin
                                             credits <= coin_ratio_b[3:0];
-                                            coin_count <= 0;
+                                            coin_count_b <= 0;
                                         end else begin
-                                            coin_count <= coin_count + 1;
+                                            coin_count_b <= coin_count_b + 1;
                                         end
                                     end
 
@@ -1463,10 +1443,6 @@ always @ (posedge clk_sys) begin
                                     mcu_2nd_wl    <= 1;
                                 end
                                 mcu_addr <= m68k_a[13:1];
-                                mcu_wl <= 1;
-                            end else begin
-                                mcu_addr <= m68k_a[13:1];
-                                mcu_din <= 8'h00 ;
                                 mcu_wl <= 1;
                             end
 
@@ -1630,7 +1606,7 @@ always @ (posedge clk_sys) begin
             z80_nmi_suppress <= ss_misc_out[21];
             io_port_a_wr     <= ss_misc_out[22];
             credits          <= ss_misc_out[30:23];
-            coin_latch       <= ss_misc_out[32:31];
+            coin_count_b     <= ss_misc_out[135:132];
             coin_count       <= ss_misc_out[36:33];
             mcu_busy         <= ss_misc_out[37];
             dac              <= ss_misc_out[45:38];
@@ -1644,8 +1620,8 @@ always @ (posedge clk_sys) begin
 end
 
 // core registers in the save state (144 bits)
-wire [143:0] ss_misc_in = { 12'd0, sb_div, sb_timer, flip_mcu, coin_pend, clk_io_count, rotary2, rotary1, m68k_ipl1_n,
-                            m68k_ipl0_n, dac, mcu_busy, coin_count, coin_latch, credits, io_port_a_wr, z80_nmi_suppress,
+wire [143:0] ss_misc_in = { 8'd0, coin_count_b, sb_div, sb_timer, flip_mcu, coin_pend, clk_io_count, rotary2, rotary1, m68k_ipl1_n,
+                            m68k_ipl0_n, dac, mcu_busy, coin_count, 2'd0, credits, io_port_a_wr, z80_nmi_suppress,
                             z80_bank, tile_bank, m68k_latch };
 
 
@@ -1775,8 +1751,8 @@ reg  m68k_ipl1_n ;
 wire m68k_reset_ce = ( reset | ss_reset68 ) & ce_20m;
 
 // IPL as the 68000 samples it: a level set on this edge is seen on this edge
-wire m68k_ipl0_cpu = m68k_ipl0_n & ~( vbl_sr == 2'b01 );
-wire m68k_ipl1_cpu = m68k_ipl1_n & ~( hbl_sr == 2'b01 );
+wire m68k_ipl0_cpu = m68k_ipl0_n & ~( vbl_sr == 2'b01 && !ss_rst_hold );
+wire m68k_ipl1_cpu = m68k_ipl1_n & ~( hbl_sr == 2'b01 && !ss_rst_hold );
 
 // VPA for $500000-$7FFFFF and interrupt acknowledge only (74LS138 Y5-Y7), not the palette at $400000
 wire m68k_vpa_n = ~(m68k_a[22] & (m68k_a[21] | m68k_a[20]) & ~(m68k_uds_n & m68k_lds_n)) ;
@@ -1991,13 +1967,15 @@ wire [15:0] aux_rdata = ( aux_sel == 3'd0 ) ? m68k_ram_dout :
                         ( aux_sel == 3'd3 ) ? m68k_pal_dout : { 8'd0, z80_ram_data };
 wire [14:1] ram_a     = aux_en ? aux_addr : m68k_a[14:1];
 wire        aux_z80   = aux_en && ( aux_sel == 3'd4 );
+// 68000 RAM writes; none while a restore holds the 68000 in reset
+wire        m68k_wr   = !m68k_rw & !ss_reset68;
 wire [15:0] ram_d     = aux_en ? aux_wdata : m68k_dout;
 
 // main 68k ram high
 dual_port_ram #(.LEN(8192)) ram8kx8_H (
     .clock_a ( clk_sys ),
     .address_a ( ram_a[13:1] ),
-    .wren_a ( aux_en ? ( aux_sel == 3'd0 && aux_we[1] ) : ( !m68k_rw & m68k_ram_cs & !m68k_uds_n ) & ce_20m ),
+    .wren_a ( aux_en ? ( aux_sel == 3'd0 && aux_we[1] ) : ( m68k_wr & m68k_ram_cs & !m68k_uds_n ) & ce_20m ),
     .data_a ( ram_d[15:8]  ),
     .q_a (  m68k_ram_dout[15:8] ),
 
@@ -2013,7 +1991,7 @@ dual_port_ram #(.LEN(8192)) ram8kx8_H (
 dual_port_ram #(.LEN(8192)) ram8kx8_L (
     .clock_a ( clk_sys ),
     .address_a ( ram_a[13:1] ),
-    .wren_a ( aux_en ? ( aux_sel == 3'd0 && aux_we[0] ) : ( !m68k_rw & m68k_ram_cs & !m68k_lds_n ) & ce_20m ),
+    .wren_a ( aux_en ? ( aux_sel == 3'd0 && aux_we[0] ) : ( m68k_wr & m68k_ram_cs & !m68k_lds_n ) & ce_20m ),
     .data_a ( ram_d[7:0]  ),
     .q_a ( m68k_ram_dout[7:0] ),
 
@@ -2032,7 +2010,7 @@ wire [15:0] sprite_ram_dout /* synthesis keep */;
 dual_port_ram #(.LEN(16384)) sprite_ram_H (
     .clock_a ( clk_sys ),
     .address_a ( ram_a[14:1] ),
-    .wren_a ( aux_en ? ( aux_sel == 3'd1 && aux_we[1] ) : ( !m68k_rw & m68k_spr_cs & !m68k_uds_n ) & ce_20m ),
+    .wren_a ( aux_en ? ( aux_sel == 3'd1 && aux_we[1] ) : ( m68k_wr & m68k_spr_cs & !m68k_uds_n ) & ce_20m ),
     .data_a ( ram_d[15:8]  ),
     .q_a (  m68k_sprite_dout[15:8] ),
 
@@ -2047,7 +2025,7 @@ dual_port_ram #(.LEN(16384)) sprite_ram_H (
 dual_port_ram #(.LEN(16384)) sprite_ram_L (
     .clock_a ( clk_sys ),
     .address_a ( ram_a[14:1] ),
-    .wren_a ( aux_en ? ( aux_sel == 3'd1 && aux_we[0] ) : ( !m68k_rw & m68k_spr_cs & !m68k_lds_n ) & ce_20m ),
+    .wren_a ( aux_en ? ( aux_sel == 3'd1 && aux_we[0] ) : ( m68k_wr & m68k_spr_cs & !m68k_lds_n ) & ce_20m ),
     .data_a ( ram_d[7:0]  ),
     .q_a ( m68k_sprite_dout[7:0] ),
 
@@ -2064,8 +2042,8 @@ wire [15:0] fg_ram_dout /* synthesis keep */;
 
 wire [15:0] m68k_fg_ram_dout;
 
-wire fg_u_w = !m68k_rw & m68k_fg_ram_cs & !m68k_uds_n ;
-wire fg_l_w = !m68k_rw & m68k_fg_ram_cs & !m68k_lds_n ;
+wire fg_u_w = m68k_wr & m68k_fg_ram_cs & !m68k_uds_n ;
+wire fg_l_w = m68k_wr & m68k_fg_ram_cs & !m68k_lds_n ;
 
 //// foreground high
 //dual_port_ram #(.LEN(2048)) ram_fg_h (
@@ -2108,7 +2086,7 @@ wire [15:0] tile_pal_dout;
 dual_port_ram #(.LEN(4096)) tile_pal_h (
     .clock_a ( clk_sys ),
     .address_a ( ram_a[12:1] ),
-    .wren_a ( aux_en ? ( aux_sel == 3'd3 && aux_we[1] ) : ( !m68k_rw & m68k_pal_cs & !m68k_uds_n ) & ce_20m ),
+    .wren_a ( aux_en ? ( aux_sel == 3'd3 && aux_we[1] ) : ( m68k_wr & m68k_pal_cs & !m68k_uds_n ) & ce_20m ),
     .data_a ( ram_d[15:8]  ),
     .q_a ( m68k_pal_dout[15:8]  ),
 
@@ -2123,7 +2101,7 @@ dual_port_ram #(.LEN(4096)) tile_pal_h (
 dual_port_ram #(.LEN(4096)) tile_pal_l (
     .clock_a ( clk_sys ),
     .address_a ( ram_a[12:1] ),
-    .wren_a ( aux_en ? ( aux_sel == 3'd3 && aux_we[0] ) : ( !m68k_rw & m68k_pal_cs & !m68k_lds_n ) & ce_20m ),
+    .wren_a ( aux_en ? ( aux_sel == 3'd3 && aux_we[0] ) : ( m68k_wr & m68k_pal_cs & !m68k_lds_n ) & ce_20m ),
     .data_a ( ram_d[7:0]  ),
     .q_a ( m68k_pal_dout[7:0] ),
 
@@ -2582,6 +2560,7 @@ alpha68k_ss alpha68k_ss (
     .z80_reg(z80_reg),
     .holdz80(ss_holdz80),
     .z80_step(ss_z80_step),
+    .rst_hold(ss_rst_hold),
     .z80_run(ss_z80_run),
     .resetz80(ss_resetz80),
     .dirset(ss_dirset),
@@ -2613,12 +2592,14 @@ alpha68k_ss alpha68k_ss (
     .aux_rdata(aux_rdata)
 );
 
-// keyboard F1 / Alt only (F2-F4 are core keys)
-reg [10:0] ss_ps2_key;
+// keyboard F1 (as the selected slot's key) and Alt only, each event a new toggle (F2-F4 are core keys)
+reg [10:0] ss_ps2_key = 0;
 reg        ss_ps2_tog;
+wire [7:0] ss_fkey = ( ss_slot == 2'd0 ) ? 8'h05 : ( ss_slot == 2'd1 ) ? 8'h06 : ( ss_slot == 2'd2 ) ? 8'h04 : 8'h0c;
 always @(posedge clk_sys) begin
     ss_ps2_tog <= ps2_key[10];
-    if ( ss_ps2_tog != ps2_key[10] && ( ps2_key[7:0] == 8'h05 || ps2_key[7:0] == 8'h11 ) ) ss_ps2_key <= ps2_key;
+    if ( ss_ps2_tog != ps2_key[10] && ( ps2_key[7:0] == 8'h05 || ps2_key[7:0] == 8'h11 ) )
+        ss_ps2_key <= { ~ss_ps2_key[10], ps2_key[9:8], ( ps2_key[7:0] == 8'h05 ) ? ss_fkey : 8'h11 };
 end
 
 savestate_ui #(.INFO_TIMEOUT_BITS(25)) savestate_ui
@@ -2653,6 +2634,11 @@ savestate_ui #(.INFO_TIMEOUT_BITS(25)) savestate_ui
 reg   [3:0] hold_cnt;
 always @(posedge clk_sys) hold_cnt <= ( hold68 && !clk_20M ) ? ( &hold_cnt ? hold_cnt : hold_cnt + 1'd1 ) : 4'd0;
 
+// state restore RAM writes also update the hiscore copy of the game's bytes
+wire        hs_ss_wr = ss_aux_en & ( |ss_aux_we ) & ~ss_aux_sel[2];
+wire [23:1] hs_ss_a  = ( ( ss_aux_sel == 3'd0 ) ? 23'h020000 : ( ss_aux_sel == 3'd1 ) ? 23'h100000 :
+                         ( ss_aux_sel == 3'd2 ) ? 23'h080000 : 23'h200000 ) + ss_aux_addr;
+
 hiscore hiscore (
     .clk(clk_sys),
     .reset(reset),
@@ -2671,11 +2657,11 @@ hiscore hiscore (
     .upload_req(hs_upload_req),
     .present(hs_present),
 
-    .cpu_wr(ce_20m & !m68k_rw & !m68k_as_n & ( !m68k_uds_n | !m68k_lds_n )),
-    .cpu_a(m68k_a[23:1]),
-    .cpu_uds_n(m68k_uds_n),
-    .cpu_lds_n(m68k_lds_n),
-    .cpu_dout(m68k_dout),
+    .cpu_wr(hs_ss_wr | ( ce_20m & m68k_wr & !m68k_as_n & ( !m68k_uds_n | !m68k_lds_n ) )),
+    .cpu_a(hs_ss_wr ? hs_ss_a : m68k_a[23:1]),
+    .cpu_uds_n(hs_ss_wr ? ~ss_aux_we[1] : m68k_uds_n),
+    .cpu_lds_n(hs_ss_wr ? ~ss_aux_we[0] : m68k_lds_n),
+    .cpu_dout(hs_ss_wr ? ss_aux_wdata : m68k_dout),
 
     .hold68(hs_hold68),
     .held(&hold_cnt),

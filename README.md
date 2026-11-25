@@ -34,7 +34,7 @@ The intent is for this core to be a 1:1 playable implementation of Alpha Denshi 
 
 ## External Modules
 
-Copied unmodified from the listed repository and commit (sources and commits are also listed in `files.qip`).
+Copied from the listed repository and commit, unmodified unless noted (sources and commits are also listed in `files.qip`).
 
 |Name| Purpose | Author | Source (commit) | License |
 |----|---------|--------|-----------------|---------|
@@ -43,7 +43,7 @@ Copied unmodified from the listed repository and commit (sources and commits are
 | [**jt2413**](https://github.com/jotego/jtopl)                   | [**Yamaha OPL-L**](https://en.wikipedia.org/wiki/Yamaha_YM2413)          | Jose Tejada    | jotego/jtopl (`f96ff3e`) | GPL-3.0 |
 | [**jt03**](https://github.com/jotego/jt12)                      | [**Yamaha OPN**](https://en.wikipedia.org/wiki/Yamaha_YM2203)            | Jose Tejada    | jotego/jt12 (`eaab7e1`) with jotego/jt49 (`7f6abfd`) | GPL-3.0 |
 | [**MiSTer framework**](https://github.com/MiSTer-devel/Template_MiSTer) | `sys/` (video, audio, HPS I/O, scaler, screen rotation) | MiSTer-devel (Sorgelig et al.) | MiSTer-devel/Template_MiSTer (`d6324f2`) | GPL-2.0+ |
-| [**Save states**](https://github.com/MiSTer-devel/Arcade-TaitoF2_MiSTer) | DDR save-state streamer, memory stream, DDR interface, slot UI (`rtl/savestate/`) | Martin Donlon | MiSTer-devel/Arcade-TaitoF2_MiSTer (`9438df9`) | GPL-2.0 |
+| [**Save states**](https://github.com/MiSTer-devel/Arcade-TaitoF2_MiSTer) | DDR save-state streamer, memory stream, DDR interface, slot UI (`rtl/savestate/`; `memory_stream.sv`, `savestates.sv` and `savestate_ui.sv` modified, see their headers) | Martin Donlon | MiSTer-devel/Arcade-TaitoF2_MiSTer (`9438df9`) | GPL-2.0 |
 | [**Pause**](https://github.com/JimmyStones/Pause_MiSTer)        | OSD pause and dimming (`rtl/pause.v`, as modified by va7deo) | Jim Gregory | JimmyStones/Pause_MiSTer | GPL-3.0 |
 | SDRAM / ROM segments                                            | `rtl/mem/` SDRAM controller, segment, download buffer, dual-port RAM | Josh Bassett (nullobject) | as shipped by va7deo | MIT |
 
@@ -92,9 +92,9 @@ Location                | PCB<br>Number      | Freq (MHz) | Use                 
 X-1  (24 MHZ)           | ALPHA-68K96V (GW)  | 24.000     | Z80 CLK (6MHZ)<br><br>YM2203 (CLK 3 MHZ)<br><br>Sprite CLK (12 MHZ)<br><br>Pixel CLK (6 MHZ) |
 X-2  (20 MHZ)           | ALPHA-68K96V (GW)  | 20.000     | M68000 CLK (10 MHZ)                                                                          |
 X-3  (3.579545 MHz)     | ALPHA-68K96V (GW)  | 3.579545   | YM2413 CLK (3.579545 MHz)                                                                    |
-X-1  (3.579545 MHz)     | ALPHA-68K96II (SS) | 24.000     | YM2413 CLK (3.579545 MHz)                                                                    |
+X-1  (3.579545 MHz)     | ALPHA-68K96II (SS) | 3.579545   | YM2413 CLK (3.579545 MHz)                                                                    |
 X-2  (18 MHZ)           | ALPHA-68K96II (SS) | 18.000     | M68000 CLK (9 MHZ)                                                                           |
-X-3  (24 MHZ)           | ALPHA-68K96II (SS) | 3.579545   | Z80 CLK (6MHZ)<br><br>YM2203 (CLK 3 MHZ)<br><br>Sprite CLK (12 MHZ)<br><br>Pixel CLK (6 MHZ) |
+X-3  (24 MHZ)           | ALPHA-68K96II (SS) | 24.000     | Z80 CLK (6MHZ)<br><br>YM2203 (CLK 3 MHZ)<br><br>Sprite CLK (12 MHZ)<br><br>Pixel CLK (6 MHZ) |
 
 **Pixel clock:** 6.00 MHz
 
@@ -202,11 +202,11 @@ LS-30 Rotary Encoder | RP2040 | Wired USB | 1ms | 2241 | 95.52% | 0.747 ms | 2e8
 
 - Additional toggle to enable the scandoubler without changing ini settings and new scanline option for 100% is available, this draws a black line every other frame. Below is an example.
 
-<table><tr><th>Scandoubler Fx</th><th>Scanlines 25%</th><th>Scanlines 50%</th><th>Scanlines 75%</th><th>Scanlines 100%</th><tr><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202102926-b860c972-4622-44c5-9df4-f4ce418042ab.png"></td><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202103109-fa5229d7-5085-45c8-9833-494135c7fef3.png"></td><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202103205-b984b54a-1f82-41da-9616-6f1a923383b9.png"></td><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202103300-74daf79e-19bf-4c95-8ab7-b5bcfd51e426.png"></td><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202103345-1a85d766-8599-42b2-abe6-deab3df2aeaa.png"></td></tr></table>
+<table><tr><th>Scandoubler Fx</th><th>Scanlines 25%</th><th>Scanlines 50%</th><th>Scanlines 75%</th><tr><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202102926-b860c972-4622-44c5-9df4-f4ce418042ab.png"></td><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202103109-fa5229d7-5085-45c8-9833-494135c7fef3.png"></td><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202103205-b984b54a-1f82-41da-9616-6f1a923383b9.png"></td><td><br> <p align="center"><img width="128" height="112" src="https://user-images.githubusercontent.com/32810066/202103300-74daf79e-19bf-4c95-8ab7-b5bcfd51e426.png"></td></tr></table>
 
 ### Gang Wars Options
 
-- There is a toggle to swap inputs from Player 1 to Player 2 in Debug Settings. This will enable you to play as Jackie in Gang Wars instead of Mike while only having one controller connected. Additionally, you can play as the additional time soldier in バトル フィールド / Time Soldiers. This only swaps inputs for the joystick and rotary control, it does not effect keyboard inputs.
+- There is a toggle to swap inputs from Player 1 to Player 2 in Debug Settings. This will enable you to play as Jackie in Gang Wars instead of Mike while only having one controller connected. Additionally, you can play as the additional time soldier in バトル フィールド / Time Soldiers. It swaps controllers 1 and 2 completely (movement, buttons, rotary, Start and Coin); keyboard keys and LS-30 adapters keep their players.
 
 - There is a toggle to disable the laughter from enemies in Gang Wars located in Debug Settings. Enabling this will mute the laughter when an enemy knocks Mike or Jackie down.
 
@@ -231,7 +231,7 @@ LS-30 Rotary Encoder | RP2040 | Wired USB | 1ms | 2241 | 95.52% | 0.747 ms | 2e8
 
 ### Keyboard Handler
 
-- Keyboard inputs mapped to mame defaults for the following functions. Player 3 and Player 4 input keys are not mapped, only Player 3 / Player 4 start buttons.
+- Keyboard inputs mapped to mame defaults for the following functions. Player 3 and Player 4 have no keyboard keys (3, 4 and T belong to the LS-30 Player 2 adapter).
 
 <br>
 
@@ -243,10 +243,6 @@ LS-30 Rotary Encoder | RP2040 | Wired USB | 1ms | 2241 | 95.52% | 0.747 ms | 2e8
 |--|--|
 |<table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P1 Up</td><td>Up</td></tr><tr><td>P1 Down</td><td>Down</td></tr><tr><td>P1 Left</td><td>Left</td></tr><tr><td>P1 Right</td><td>Right</td></tr><tr><td>P1 Bttn 1</td><td>L-Ctrl</td></tr><tr><td>P1 Bttn 2</td><td>L-Alt</td></tr><tr><td>P1 Bttn 3</td><td>Space</td></tr> </table> | <table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P2 Up</td><td>R</td></tr><tr><td>P2 Down</td><td>F</td></tr><tr><td>P2 Left</td><td>D</td></tr><tr><td>P2 Right</td><td>G</td></tr><tr><td>P2 Bttn 1</td><td>A</td></tr><tr><td>P2 Bttn 2</td><td>S</td></tr><tr><td>P2 Bttn 3</td><td>Q</td></tr> </table>|
 
-|Player 3|Player 4|
-|--|--|
-|<table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P3 Bttn 1</td><td>**N/A**</td></tr><tr><td>P3 Bttn 2</td><td>**N/A**</td></tr><tr><td>P3 Bttn 3</td><td>**N/A**</td></tr><tr><td>P3 Start</td><td>3</td></tr> </table> | <table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P4 Bttn 1</td><td>**N/A**</td></tr><tr><td>P4 Bttn 2</td><td>**N/A**</td></tr><tr><td>P4 Bttn 3</td><td>**N/A**</td></tr><tr><td>P4 Start</td><td>4</td></tr> </table>|
-
 <br>
 
 - Custom keyboard inputs mapped for LS-30 RP2040 firmware functionality. The mapping is player dependent for the RP2040 firmware.
@@ -255,4 +251,4 @@ LS-30 Rotary Encoder | RP2040 | Wired USB | 1ms | 2241 | 95.52% | 0.747 ms | 2e8
 
 |LS-30 Player 1|LS-30 Player 2|
 |--|--|
-|<table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P1 Rotary 1</td><td>Y</td></tr><tr><td>P1 Rotary 2</td><td>U</td></tr><tr><td>P1 Rotary 3</td><td>I</td></tr><tr><td>P1 Rotary 4</td><td>O</td></tr><tr><td>P1 Rotary 5</td><td>H</td></tr><tr><td>P1 Rotary 6</td><td>J</td></tr><tr><td>P1 Rotary 7</td><td>K</td></tr><tr><td>P1 Rotary 8</td><td>L</td></tr><tr><td>P1 Rotary 9</td><td>N</td></tr><tr><td>P1 Rotary 10</td><td>M</td></tr><tr><td>P1 Rotary 11</td><td>,</td></tr><tr><td>P1 Rotary 12</td><td>.</td></tr> </table> | <table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P2 Rotary 1</td><td>Z</td></tr><tr><td>P2 Rotary 2</td><td>X</td></tr><tr><td>P2 Rotary 3</td><td>C</td></tr><tr><td>P2 Rotary 4</td><td>V</td></tr><tr><td>P2 Rotary 5</td><td>B</td></tr><tr><td>P2 Rotary 6</td><td>W</td></tr><tr><td>P2 Rotary 7</td><td>E</td></tr><tr><td>P2 Rotary 8</td><td>T</td></tr><tr><td>P2 Rotary 9</td><td>3</td></tr><tr><td>P2 Rotary 10</td><td>4</td></tr><tr><td>P2 Rotary 11</td><td>7</td></tr><tr><td>P2 Rotary 12</td><td>8</td></tr> </table>|
+|<table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P1 Rotary 1</td><td>Y</td></tr><tr><td>P1 Rotary 2</td><td>U</td></tr><tr><td>P1 Rotary 3</td><td>I</td></tr><tr><td>P1 Rotary 4</td><td>O</td></tr><tr><td>P1 Rotary 5</td><td>H</td></tr><tr><td>P1 Rotary 6</td><td>J</td></tr><tr><td>P1 Rotary 7</td><td>K</td></tr><tr><td>P1 Rotary 8</td><td>L</td></tr><tr><td>P1 Rotary 9</td><td>N</td></tr><tr><td>P1 Rotary 10</td><td>M</td></tr><tr><td>P1 Rotary 11</td><td>,</td></tr><tr><td>P1 Rotary 12</td><td>.</td></tr> </table> | <table> <tr><th>Functions</th><th>Keymap</th></tr><tr><td>P2 Rotary 1</td><td>Z</td></tr><tr><td>P2 Rotary 2</td><td>X</td></tr><tr><td>P2 Rotary 3</td><td>C</td></tr><tr><td>P2 Rotary 4</td><td>V</td></tr><tr><td>P2 Rotary 5</td><td>B</td></tr><tr><td>P2 Rotary 6</td><td>Caps Lock</td></tr><tr><td>P2 Rotary 7</td><td>E</td></tr><tr><td>P2 Rotary 8</td><td>T</td></tr><tr><td>P2 Rotary 9</td><td>3</td></tr><tr><td>P2 Rotary 10</td><td>4</td></tr><tr><td>P2 Rotary 11</td><td>7</td></tr><tr><td>P2 Rotary 12</td><td>8</td></tr> </table>|

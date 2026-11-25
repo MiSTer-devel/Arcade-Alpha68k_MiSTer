@@ -59,12 +59,6 @@
             <part name="kcb-chr1.h18" crc="a5ce1e10" map="0100"/>
             <part name="kcb-chr0.h16" crc="b8a1a088" map="1000"/>
         </interleave>
-        <interleave output="32">
-            <part name="kcb-chr3.h21" crc="719071c7" map="0001"/>
-            <part name="kcb-chr2.h19" crc="014f0f90" map="0010"/>
-            <part name="kcb-chr1.h18" crc="a5ce1e10" map="0100"/>
-            <part name="kcb-chr0.h16" crc="b8a1a088" map="1000"/>
-        </interleave>
 
         <!-- mcu - starts at 0x400000 -->
         <!-- <part name="alpha.mcu" crc=""/> -->

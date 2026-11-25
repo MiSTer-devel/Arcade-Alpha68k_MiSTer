@@ -1,5 +1,7 @@
-// memory_stream.sv: copied unmodified from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 rtl/memory_stream.sv
-// (Martin Donlon / wickerwaka, GPL-2.0, see that repository's LICENSE); only this provenance header was added.
+// memory_stream.sv: copied from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 rtl/memory_stream.sv
+// (Martin Donlon / wickerwaka, GPL-2.0, see that repository's LICENSE).
+// Modified for Arcade-Alpha68kMD: a save first writes the slot header with size 0 (WRITE_EMPTY), so an
+// interrupted save leaves an empty slot rather than the old size over mixed data.
 module memory_stream #(parameter COUNT = 32)
 (
     input               clk,
@@ -47,7 +49,9 @@ module memory_stream #(parameter COUNT = 32)
         READ_HEADER,
         READ_HEADER_WAIT,
         WRITE_HEADER,
-        WRITE_HEADER_WAIT
+        WRITE_HEADER_WAIT,
+        WRITE_EMPTY,
+        WRITE_EMPTY_WAIT
     } state_t;
 
     state_t state;
@@ -145,7 +149,7 @@ module memory_stream #(parameter COUNT = 32)
                                 end_addr <= current_addr + { ddr.rdata[61:32], 2'b00 };
                                 state <= READ_MEM_REQ;
                             end else begin
-                                state <= QUERY_GATHER_FIRST;
+                                state <= WRITE_EMPTY;
                             end
                         end
                     end
@@ -167,6 +171,23 @@ module memory_stream #(parameter COUNT = 32)
                     if (~ddr.busy) begin
                         ddr.write <= 0;
                         state <= IDLE;
+                    end
+                end
+
+                // size 0, change counter unchanged: empty until the new header is written last
+                WRITE_EMPTY: begin
+                    if (~ddr.busy) begin
+                        ddr.write <= 1;
+                        ddr.addr <= start_addr;
+                        ddr.wdata <= { 32'd0, header_data[31:0] };
+                        state <= WRITE_EMPTY_WAIT;
+                    end
+                end
+
+                WRITE_EMPTY_WAIT: begin
+                    if (~ddr.busy) begin
+                        ddr.write <= 0;
+                        state <= QUERY_GATHER_FIRST;
                     end
                 end
 

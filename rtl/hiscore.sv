@@ -163,6 +163,7 @@ typedef enum bit [3:0] { HS_WAIT, HS_CHECK_A, HS_CHECK_B, HS_CHECK_C, HS_IDLE, H
 hs_state_t st = HS_WAIT;
 
 reg         vbl_l, osd_l, save_l, reset_l;
+reg   [8:0] up_a1, up_a2;
 reg   [5:0] frames;
 reg   [2:0] ce;               // entry being checked / restored
 reg         ok_all;
@@ -194,13 +195,15 @@ always @(posedge clk) begin
         loaded   <= 1;
     end
 
-    // upload serves the live table and keeps it as the saved one
+    // upload serves the live table and keeps it as the saved one (once sh_q belongs to the current address)
+    up_a1 <= ioctl_addr[8:0];
+    up_a2 <= up_a1;
     if ( ioctl_upload && ioctl_index == IDX_TABLE ) begin
         sh_raddr  <= ioctl_addr[8:0];
         ioctl_din <= sh_q;
-        if ( ioctl_addr[8:0] != 0 ) begin
+        if ( up_a2 == ioctl_addr[8:0] && up_a1 == ioctl_addr[8:0] ) begin
             sv_we    <= 1;
-            sv_waddr <= ioctl_addr[8:0] - 1'd1;
+            sv_waddr <= ioctl_addr[8:0];
             sv_wdata <= sh_q;
         end
     end

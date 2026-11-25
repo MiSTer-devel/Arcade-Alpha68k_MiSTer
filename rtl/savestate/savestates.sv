@@ -1,5 +1,7 @@
-// savestates.sv: copied unmodified from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 rtl/savestates.sv
-// (Martin Donlon / wickerwaka, GPL-2.0, see that repository's LICENSE); only this provenance header was added.
+// savestates.sv: copied from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 rtl/savestates.sv
+// (Martin Donlon / wickerwaka, GPL-2.0, see that repository's LICENSE).
+// Modified for Arcade-Alpha68kMD: auto_save_adaptor returns 0 for its final (padding) word instead of reading past
+// the end of its storage.
 interface ssbus_if();
     logic [63:0] data;
     logic [31:0] addr;
@@ -124,7 +126,7 @@ always @(posedge clk) begin
             end
             ssbus.write_ack(SS_IDX);
         end else if (ssbus.read) begin
-            ssbus.read_response(SS_IDX, {48'd0, storage1[ ssbus.addr * 16 +: 16 ] } );
+            ssbus.read_response(SS_IDX, {48'd0, ( ssbus.addr == N_WORDS ) ? 16'd0 : storage1[ ssbus.addr * 16 +: 16 ] } );
         end
     end
 

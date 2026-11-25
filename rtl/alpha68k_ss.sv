@@ -35,6 +35,7 @@ module alpha68k_ss
     output reg        irq7,
     output reg        reset68,
     output            active,
+    output            rst_hold,
 
     // Z80
     input             z80_m1_n,
@@ -113,13 +114,21 @@ typedef enum bit [4:0] {
     SST_RST_68K_RESET,
     SST_RST_RELEASE,
     SST_RST_68K_RUN,
-    SST_RST_Z80_T2
+    SST_RST_Z80_T2,
+    SST_RST_DRY,
+    SST_RST_CHECK
 } ss_state_t;
 
 ss_state_t state = SST_IDLE;
 assign active = ( state != SST_IDLE );
 // a save lets the Z80 reach its next opcode fetch even while the core is paused
 assign z80_run = ( state == SST_SAVE_STOPZ80 );
+// a restore from its first change to the 68000's reset: core interrupt levels stay as restored
+assign rst_hold = ( state == SST_RST_STOP ) || ( state == SST_RST_READ ) || ( state == SST_RST_REPLAY ) ||
+                  ( state == SST_RST_Z80 ) || ( state == SST_RST_Z80_T2 ) || ( state == SST_RST_68K_RESET );
+
+reg   [1:0] slot_l;            // slot of the save / restore in progress
+reg         dry;               // restore check pass: count chunk elements, change nothing
 
 reg  [31:0] saved_ssp;
 reg  [31:0] restore_ssp;
@@ -182,10 +191,33 @@ save_state_data save_state_data (
     .ddr,
     .read_start(ss_read),
     .write_start(ss_write),
-    .index,
+    .index(slot_l),
     .busy(ss_busy),
     .ssbus(ssbus)
 );
+
+// check pass: elements per chunk as the slot holds them, against the sizes a save writes
+reg  [15:0] chk_n [10];
+reg         chk_bad, chk_wr_l;
+wire        chk_wr = ssbus.write & ~ssbus.query;
+integer     ci;
+
+always @(posedge clk) begin
+    chk_wr_l <= chk_wr;
+    if ( state == SST_RST_DRY ) begin
+        for ( ci = 0; ci < 10; ci = ci + 1 ) chk_n[ci] <= 0;
+        chk_bad <= 0;
+    end else if ( dry && chk_wr && !chk_wr_l ) begin
+        if ( ssbus.select < 8'd10 ) chk_n[ssbus.select] <= chk_n[ssbus.select] + 1'd1;
+        else chk_bad <= 1;
+    end
+end
+
+wire chk_ok = !chk_bad && ( chk_n[SSIDX_GLOBAL] == 16'd1 ) && ( chk_n[SSIDX_WORK_RAM] == 16'd8192 ) &&
+              ( chk_n[SSIDX_SPR_RAM] == 16'd16384 ) && ( chk_n[SSIDX_FG_RAM] == 16'd2048 ) &&
+              ( chk_n[SSIDX_PAL_RAM] == 16'd4096 ) && ( chk_n[SSIDX_Z80_RAM] == 16'd2048 ) &&
+              ( chk_n[SSIDX_Z80] == 16'd15 ) && ( chk_n[SSIDX_MISC] == 16'd10 ) &&
+              ( chk_n[SSIDX_SND] == 16'd320 ) && ( chk_n[SSIDX_SND_SEL] == 16'd1 );
 
 // global: saved SSP
 always @(posedge clk) begin
@@ -194,7 +226,7 @@ always @(posedge clk) begin
         if ( ssb[0].read ) begin
             ssb[0].read_response(SSIDX_GLOBAL, { 32'd0, saved_ssp });
         end else if ( ssb[0].write ) begin
-            restore_ssp <= ssb[0].data[31:0];
+            if ( !dry ) restore_ssp <= ssb[0].data[31:0];
             ssb[0].write_ack(SSIDX_GLOBAL);
         end
     end
@@ -213,12 +245,15 @@ auto_save_adaptor #(.N_BITS(224), .SS_IDX(SSIDX_Z80)) z80_ss (
 );
 
 // core registers
+wire misc_bits_wr;
+assign misc_wr = misc_bits_wr & ~dry;
+
 auto_save_adaptor #(.N_BITS(144), .SS_IDX(SSIDX_MISC)) misc_ss (
     .clk,
     .ssbus(ssb[2]),
     .bits_in(misc_in),
     .bits_out(misc_out),
-    .bits_wr(misc_wr)
+    .bits_wr(misc_bits_wr)
 );
 
 ////////////////////////////////////////////////////////////////////////////
@@ -293,10 +328,11 @@ always @(posedge clk) begin
                 aux_wdata <= ssb[3].data[15:0];
                 snd_raddr <= ssb[3].addr[8:0];
                 if ( ssb[3].write ) begin
+                    // the check pass acks without writing
                     if ( br_sel == SSIDX_SND_SEL ) begin
-                        sel_wr    <= 1;
+                        sel_wr    <= !dry;
                         sel_wdata <= ssb[3].data[15:0];
-                    end else if ( br_sel != SSIDX_SND ) begin
+                    end else if ( br_sel != SSIDX_SND && !dry ) begin
                         aux_we <= ( br_width == 1 ) ? 2'b11 : 2'b01;
                     end
                     br <= BR_WR;
@@ -342,7 +378,7 @@ reg [12:0] rp_wait;
 reg  [2:0] rp_phase;
 reg        rp_go, rp_done;
 
-// YM2203 replay order: prescaler, 0x00-0x9f, A-group with high latch first, 0xb0-0xff; key on (0x28) skipped
+// YM2203 replay order: prescaler, 0x00-0x9f, A-group with high latch first, 0xb0-0xff; key on (0x28-0x2b) last
 function [7:0] opn_order(input [7:0] i);
     case ( i )
         8'ha0: opn_order = 8'ha4; 8'ha1: opn_order = 8'ha0; 8'ha2: opn_order = 8'ha5; 8'ha3: opn_order = 8'ha1;
@@ -354,7 +390,7 @@ function [7:0] opn_order(input [7:0] i);
 endfunction
 
 wire [7:0] rp_reg  = ( rp_step < 10'd256 ) ? opn_order(rp_step[7:0]) : { 2'b00, rp_step[5:0] };
-wire       rp_skip = ( rp_step < 10'd256 ) && ( ( rp_reg == 8'h28 ) || ( rp_reg >= 8'h2d && rp_reg <= 8'h2f ) );
+wire       rp_skip = ( rp_step < 10'd256 ) && ( ( rp_reg >= 8'h28 && rp_reg <= 8'h2b ) || ( rp_reg >= 8'h2d && rp_reg <= 8'h2f ) );
 
 ////////////////////////////////////////////////////////////////////////////
 // shadow write port: clear on reset, snoop chip writes, restore from the chunk bus
@@ -374,11 +410,11 @@ always @(posedge clk) begin
         snd_wdata <= 0;
         clr_addr  <= clr_addr + 1'd1;
         if ( &clr_addr ) clr_busy <= 0;
-    end else if ( br == BR_IDLE && ssb[3].write && !ssb[3].query && br_sel == SSIDX_SND ) begin
+    end else if ( br == BR_IDLE && ssb[3].write && !ssb[3].query && br_sel == SSIDX_SND && !dry ) begin
         snd_we    <= 1;
         snd_waddr <= ssb[3].addr[8:0];
         snd_wdata <= ssb[3].data[7:0];
-    end else if ( opn_wr ) begin
+    end else if ( opn_wr && !rp_go ) begin
         if ( !opn_a0 ) begin
             opn_sel <= opn_din;
             case ( opn_din )
@@ -388,11 +424,12 @@ always @(posedge clk) begin
                 default: ;
             endcase
         end else begin
-            snd_we    <= 1;
-            snd_waddr <= { 1'b0, opn_sel };
+            // key on (0x28) kept per channel in the unused 0x29-0x2b
+            snd_we    <= ( opn_sel != 8'h28 ) || ( opn_din[1:0] != 2'd3 );
+            snd_waddr <= ( opn_sel == 8'h28 ) ? { 1'b0, 8'h29 + { 6'd0, opn_din[1:0] } } : { 1'b0, opn_sel };
             snd_wdata <= opn_din;
         end
-    end else if ( opll_wr ) begin
+    end else if ( opll_wr && !rp_go ) begin
         if ( !opll_a0 ) begin
             opll_sel <= opll_din[5:0];
         end else begin
@@ -454,9 +491,26 @@ always @(posedge clk) begin
                     end
                     if ( rp_wait == 13'd4120 ) begin
                         rp_wait <= 0;
-                        if ( rp_step == 10'd319 ) rp_phase <= 4;
+                        if ( rp_step == 10'd319 ) begin rp_phase <= 6; rp_step <= 10'h029; end
                         else rp_step <= rp_step + 1'd1;
                     end
+                end
+            end
+            // YM2203 key on per channel as saved (0x29-0x2b hold channels 0-2)
+            6: begin
+                if ( rp_wait < 8 ) begin
+                    rp_a0 <= 0; rp_din <= 8'h28; rp_wr <= 1;
+                end else if ( rp_wait < 16 ) begin
+                    rp_wr <= 0;
+                end else if ( rp_wait < 24 ) begin
+                    rp_a0 <= 1; rp_din <= { snd_q[7:4], 2'b00, rp_step[1:0] - 2'd1 }; rp_wr <= 1;
+                end else begin
+                    rp_wr <= 0;
+                end
+                if ( rp_wait == 13'd4120 ) begin
+                    rp_wait <= 0;
+                    if ( rp_step == 10'h02b ) rp_phase <= 4;
+                    else rp_step <= rp_step + 1'd1;
                 end
             end
             // restore the selects the game left in the chips
@@ -492,14 +546,15 @@ always @(posedge clk) begin
         SST_IDLE: begin
             hold68 <= 0; holdz80 <= 0; holdsnd <= 0; cpu_execute <= 0; irq7 <= 0; reset68 <= 0;
             resetz80 <= 0; dirset <= 0; mute <= 0; aux_en <= 0; rp_go <= 0;
-            z80_step <= 0; z_arm <= 0; z_park <= 0; z_late <= 0; z_n <= 0;
+            z80_step <= 0; z_arm <= 0; z_park <= 0; z_late <= 0; z_n <= 0; dry <= 0;
             cnt <= 0;
+            slot_l <= index;
             if ( do_save && !reset ) begin
                 hold68 <= 1;
                 state  <= SST_SAVE_STOP68;
             end else if ( do_restore && !reset ) begin
-                hold68 <= 1; holdz80 <= 1; holdsnd <= 1; mute <= 1;
-                state  <= SST_RST_STOP;
+                hold68 <= 1; holdz80 <= 1; holdsnd <= 1; mute <= 1; dry <= 1;
+                state  <= SST_RST_DRY;
             end
         end
 
@@ -560,6 +615,19 @@ always @(posedge clk) begin
         // handler pops the registers and returns
         SST_SAVE_EXIT: begin
             if ( prog_fetch_out ) state <= SST_IDLE;
+        end
+
+        // everything frozen; read the slot once without writing and count each chunk's elements
+        SST_RST_DRY: begin
+            if ( cnt == 16'd8 ) begin ss_read <= 1; state <= SST_RST_CHECK; end
+        end
+
+        // restore only a complete state; an empty or short slot changes nothing
+        SST_RST_CHECK: begin
+            if ( !ss_busy && !ss_read ) begin
+                dry <= 0; cnt <= 0;
+                state <= chk_ok ? SST_RST_STOP : SST_IDLE;
+            end
         end
 
         // everything frozen, Z80 in reset; chunks from DDR

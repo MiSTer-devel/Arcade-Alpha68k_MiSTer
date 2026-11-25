@@ -21,7 +21,7 @@ set_global_assignment -name VHDL_FILE rtl/mem/segment.vhd
 set_global_assignment -name VHDL_FILE rtl/mem/download_buffer.vhd
 set_global_assignment -name VHDL_FILE rtl/mem/sdram.vhd
 set_global_assignment -name VHDL_FILE rtl/mem/dual_port_ram.vhd
-# save states: ddram, savestates, memory_stream, savestate_ui from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 (Martin Donlon, GPL-2.0)
+# save states: ddram, savestates, memory_stream, savestate_ui from MiSTer-devel/Arcade-TaitoF2_MiSTer @ 9438df98f1ea826c5398db43587992def0124603 (Martin Donlon, GPL-2.0); savestates, memory_stream, savestate_ui modified (see headers)
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/savestate/system_consts.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/savestate/ddram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/savestate/savestates.sv
